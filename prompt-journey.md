@@ -110,3 +110,45 @@ Polish per spec §10 and M5, one feature at a time without breaking existing beh
 
 
 ---
+
+## M6 — Deploy Preparation & Build Verification
+
+**Prompt:**
+```
+Prepare deployment. Ensure npm run build passes. Write README.md (what it is, how BYOK works, run instructions). Confirm .gitignore covers env files and no API key appears in source, dist, or git history. Add static deploy config for Vercel or Netlify (client-only, no server). Add a UI privacy note that code is sent to Gemini using the user's own key. Log this prompt first.
+```
+
+**What came back:**
+
+
+**What broke / surprised me:**
+
+
+**Refined prompt / fix:**
+
+
+**Lesson:**
+
+
+---
+
+## M7 — Submission Documentation
+
+**Prompt:**
+```
+Create SUBMISSION.md: short problem statement from spec §2.1; LinkedIn post draft with #VibeToBuild #DFP2026 #GDGPune #DevFestIndia #DevFestPune2026 and a placeholder for the live URL; the demo shooting script from §16; and a summary of the real pivots from my logged prompt-journey.md entries, inventing nothing. Log this prompt first. (use tokens judiciously, think intelligently- make this PEAK)
+```
+
+**What came back:**
+
+
+**What broke / surprised me:**
+
+
+**Refined prompt / fix:**
+
+
+**Lesson:**
+
+
+---

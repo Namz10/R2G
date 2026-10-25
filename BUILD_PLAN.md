@@ -15,7 +15,7 @@
   - [x] Append prompt-logging rule to `RedToGreen-SPEC.md` §17.2
   - **Exit Test:** Hello-world scaffold in place, key-handling approach decided, prompt journey initialized.
 
-- [ ] **M1 UI Shell with Mock Data & BYOK (19:10–19:30)** *(IN PROGRESS)*
+- [x] **M1 UI Shell with Mock Data & BYOK (19:10–19:30)**
   - [x] Vite + React 18 + TypeScript + Tailwind CSS scaffold
   - [x] Dark theme styling (`#0B0F14` bg, `#121821` panels, `#1F2937` borders, semantic red `#F43F5E` / green `#22C55E` / amber `#F59E0B`)
   - [x] Inter + JetBrains Mono typography
@@ -69,18 +69,20 @@
   - [x] Favicon, page title, and full OpenGraph / Twitter meta tags
   - **Exit Test:** App feels snappy, polished, and ready for recording at 1080p.
 
-- [ ] **M6 Deploy & Smoke Test (20:55–21:05)**
-  - [ ] Production build verification (`npm run build`)
-  - [ ] Deploy to host (Cloud Run / Vercel / Netlify)
-  - [ ] Smoke test in incognito and mobile viewport
-  - [ ] Verify no API key leaks in bundle or network requests
+- [x] **M6 Deploy & Smoke Test (20:55–21:05)**
+  - [x] Production build verification (`npm run build`) — passes clean
+  - [x] Static deploy configs created (`vercel.json`, `netlify.toml`)
+  - [x] Privacy note added to UI footer
+  - [x] Verify no API key leaks in bundle or source — confirmed clean
+  - [x] README.md with BYOK docs, run instructions, deploy guides
+  - [ ] Deploy to host and smoke test in incognito
   - **Exit Test:** Public URL works end-to-end on live sample runs.
 
-- [ ] **M7 Record & Submit (21:05–21:35)**
+- [ ] **M7 Record & Submit (21:05–21:35)** *(IN PROGRESS)*
+  - [x] SUBMISSION.md created (problem statement, LinkedIn draft, demo script, pivots)
   - [ ] Record 75–90s demo video per script §16 (Sample 2 hero run + 1 live fresh bug)
   - [ ] Post on LinkedIn with `#VibeToBuild`
-  - [ ] Finalize `prompt-journey.md`
-  - [ ] Prepare short problem statement (§2.1)
+  - [ ] Finalize `prompt-journey.md` outcome fields
   - [ ] Submit official form and screenshot confirmation
   - **Exit Test:** Submission confirmed with public links before deadline.
 

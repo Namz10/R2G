@@ -466,6 +466,11 @@ export const App: React.FC = () => {
             <span>Real in-browser execution · Gemini structured outputs</span>
           </div>
         </div>
+        <p className="mt-2 text-slate-500/70 text-[10px] max-w-xl mx-auto leading-relaxed">
+          🔒 Privacy: Your code is sent to the Gemini API using <strong>your own API key</strong>.
+          No code or keys are stored on any server. Keys live only in your browser's sessionStorage
+          and are cleared when the tab closes.
+        </p>
       </footer>
 
       {/* BYOK Settings Modal */}
