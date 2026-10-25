@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Copy, Check, FileDiff, Columns, AlignJustify } from 'lucide-react';
-import { computeLineDiff } from '../lib/diff.ts';
+import { computeLineDiff, DiffLine } from '../lib/diff.ts';
 
 interface DiffViewProps {
   originalCode: string;
@@ -82,7 +82,7 @@ export const DiffView: React.FC<DiffViewProps> = ({ originalCode, fixedCode }) =
       {mode === 'unified' ? (
         <div className="border border-[#1F2937] rounded-xl overflow-hidden bg-[#0B0F14] font-mono text-xs">
           <div className="overflow-x-auto divide-y divide-[#1F2937]/30">
-            {lines.map((line, idx) => {
+            {lines.map((line: DiffLine, idx: number) => {
               const isAdd = line.type === 'added';
               const isRem = line.type === 'removed';
 
