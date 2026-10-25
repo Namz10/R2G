@@ -16,7 +16,7 @@ import {
 import { TestCase } from './types.ts';
 
 // Model ID lives in a single constant per Spec §9.1
-export const MODEL_ID = 'gemini-2.5-flash';
+export const MODEL_ID = 'gemini-3.8-flash';
 
 /**
  * Executes a call with a 45s timeout and 1 auto-retry on 429/5xx/parse failures with backoff per Spec §7.2 & §9.1.

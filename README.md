@@ -22,7 +22,7 @@ Built for **GDG Pune DevFest 2026 · Vibe to Build** · Tech / Developer-Tool tr
 
 ## 🔑 BYOK (Bring Your Own Key)
 
-RedToGreen uses the **Gemini API** (`gemini-2.5-flash`) for its agent loop. Your API key is required to run the tool.
+RedToGreen uses the **Gemini API** (`gemini-3.8-flash`) for its agent loop. Your API key is required to run the tool.
 
 ### How It Works
 

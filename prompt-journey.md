@@ -152,3 +152,65 @@ Create SUBMISSION.md: short problem statement from spec §2.1; LinkedIn post dra
 
 
 ---
+
+## M6.1 — Vercel Deployment Troubleshooting (Missing Modules & Strict Typing)
+
+**Prompt:**
+```
+22:54:02.675 Running build in Washington, D.C., USA (East) – iad1
+...
+src/App.tsx(13,31): error TS2307: Cannot find module './lib/limits.ts' or its corresponding type declarations.
+src/App.tsx(14,27): error TS2307: Cannot find module './lib/apiKey.ts' or its corresponding type declarations.
+src/agent/gates.ts(3,33): error TS2307: Cannot find module '../lib/diff.ts' or its corresponding type declarations.
+src/agent/gemini.ts(2,27): error TS2307: Cannot find module '../lib/apiKey.ts' or its corresponding type declarations.
+src/agent/orchestrator.ts(4,24): error TS2307: Cannot find module '../lib/hash.ts' or its corresponding type declarations.
+src/runner/runner.ts(2,24): error TS2307: Cannot find module '../lib/limits.ts' or its corresponding type declarations.
+src/ui/DiffView.tsx(3,33): error TS2307: Cannot find module '../lib/diff.ts' or its corresponding type declarations.
+src/ui/DiffView.tsx(85,25): error TS7006: Parameter 'line' implicitly has an 'any' type.
+src/ui/DiffView.tsx(85,31): error TS7006: Parameter 'idx' implicitly has an 'any' type.
+src/ui/InputPanel.tsx(4,24): error TS2307: Cannot find module '../lib/limits.ts' or its corresponding type declarations.
+src/ui/SettingsModal.tsx(3,51): error TS2307: Cannot find module '../lib/apiKey.ts' or its corresponding type declarations.
+Error: [BUILD_UTILS_SPAWN_1] Command "npm run build" exited with 1
+
+fix all the errors, it needs to get deployed the next time i try
+```
+
+**What came back:**
+Diagnosed `.gitignore` rule collision (`lib/` matching `src/lib/`) and typed `DiffLine` parameter.
+
+**What broke / surprised me:**
+Generic `lib/` in standard `.gitignore` template caught `src/lib/`, preventing git from tracking essential helper files.
+
+**Refined prompt / fix:**
+Updated `.gitignore` with `/lib/` and `!src/lib/`, added explicit types to `lines.map((line: DiffLine, idx: number))` in `DiffView.tsx`, and committed all missing files.
+
+**Lesson:**
+Always verify `git ls-files` against local source directories before first cloud deployment.
+
+---
+
+## M6.2 — Model Deprecation: Upgrading to Gemini 3.8 Flash
+
+**Prompt:**
+```
+The AI service had a problem. Retry
+Investigation API error: {"error":{"code":404,"message":"This model models/gemini-2.5-flash is no longer available to new users. Please update your code to use models/gemini-3.8-flash for the latest features and improvements. We recommend you to use the Interactions API (https://ai.google.dev/gemini-api/docs/get-started).","status":"NOT_FOUND"}}
+
+fix this, use the recommended model.
+also i hope u r logging in my prompts in this chat too in the prompts md file , if not do it, log the deployment error and model error prompts too
+fix the model thing first (use tokens judiciously)
+```
+
+**What came back:**
+Single-constant model update and verified build.
+
+**What broke / surprised me:**
+Google AI Studio retired `gemini-2.5-flash` for new API keys with a 404 response requiring `gemini-3.8-flash`.
+
+**Refined prompt / fix:**
+Updated `MODEL_ID` in `src/agent/gemini.ts` to `gemini-3.8-flash` per Spec §9.1 architectural design (centralized constant).
+
+**Lesson:**
+Centralizing model identifiers in a single configuration constant allows seamless API version migrations in seconds.
+
+---
