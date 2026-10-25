@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { runSuite, runSingleTest, preflight } from '../runner/runner.ts';
 import { SAMPLES } from '../samples/samples.ts';
 import { SAMPLE_2_MOCK_TESTS, SAMPLE_2_PATCH } from '../agent/mockData.ts';
+import { runGateUnitChecks } from '../agent/gates.test.ts';
 import { SuiteRun, TestResult, TestCase } from '../agent/types.ts';
-import { CheckCircle2, XCircle, Play, Clock, ArrowLeft } from 'lucide-react';
+import { CheckCircle2, XCircle, Play, Clock, ArrowLeft, ShieldCheck } from 'lucide-react';
 
 interface DevRunnerTestProps {
   onBack: () => void;
@@ -14,6 +15,7 @@ export const DevRunnerTest: React.FC<DevRunnerTestProps> = ({ onBack }) => {
   const [fixedRun, setFixedRun] = useState<SuiteRun | null>(null);
   const [timeoutResult, setTimeoutResult] = useState<TestResult | null>(null);
   const [preflightOutput, setPreflightOutput] = useState<any>(null);
+  const [gateChecks, setGateChecks] = useState<{ passed: boolean; results: string[] } | null>(null);
   const [running, setRunning] = useState(false);
 
   const sample2 = SAMPLES[1];
@@ -23,8 +25,13 @@ export const DevRunnerTest: React.FC<DevRunnerTestProps> = ({ onBack }) => {
     setBuggyRun(null);
     setFixedRun(null);
     setTimeoutResult(null);
+    setGateChecks(null);
 
     try {
+      // 0. Run Gate Unit-Style Checks with Fixtures
+      const gatesResult = runGateUnitChecks();
+      setGateChecks(gatesResult);
+
       // 1. Run Preflight
       const pf = preflight(sample2.code);
       setPreflightOutput(pf);
@@ -106,6 +113,28 @@ export const DevRunnerTest: React.FC<DevRunnerTestProps> = ({ onBack }) => {
           <span>{running ? 'Executing Tests in Workers...' : 'Run All Exit Tests'}</span>
         </button>
       </div>
+
+      {/* Test 0: Gate Unit Checks */}
+      {gateChecks && (
+        <div className="bg-[#121821] border border-[#1F2937] rounded-xl p-4 space-y-2">
+          <div className="flex items-center justify-between text-xs">
+            <span className="font-semibold text-white flex items-center gap-1.5">
+              <ShieldCheck className="w-4 h-4 text-emerald-400" />
+              <span>0. Pure Verification Gates Unit-Style Checks (Fixtures)</span>
+            </span>
+            <span className={`font-mono font-semibold ${gateChecks.passed ? 'text-emerald-400' : 'text-rose-400'}`}>
+              {gateChecks.passed ? '✓ ALL PASS' : '✕ FAILURES'}
+            </span>
+          </div>
+          <div className="text-xs font-mono bg-[#0B0F14] p-3 rounded-lg border border-[#1F2937] space-y-1">
+            {gateChecks.results.map((r, i) => (
+              <div key={i} className={r.includes('PASS') ? 'text-emerald-300' : 'text-rose-300'}>
+                {r}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Test 1: Preflight */}
       {preflightOutput && (

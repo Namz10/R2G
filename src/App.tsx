@@ -12,8 +12,12 @@ import { DevRunnerTest } from './ui/DevRunnerTest.tsx';
 import { SAMPLES, Sample } from './samples/samples.ts';
 import { validateInput } from './lib/limits.ts';
 import { hasApiKey } from './lib/apiKey.ts';
+import { Download, Disc, Check } from 'lucide-react';
+import { downloadProofReport } from './ui/ProofReport.ts';
+import { saveReplay, getReplayForSample } from './samples/replayManager.ts';
 import { AgentState, StepState } from './agent/types.ts';
-import { INITIAL_STATE, SAMPLE_2_MOCK_TESTS, SAMPLE_2_PATCH } from './agent/mockData.ts';
+import { INITIAL_STATE } from './agent/mockData.ts';
+import { runAgentOrchestrator, AgentEvent } from './agent/orchestrator.ts';
 
 type Action =
   | { type: 'SET_PHASE'; phase: AgentState['phase'] }
@@ -86,22 +90,20 @@ export const App: React.FC = () => {
   const [hasKey, setHasKey] = useState<boolean>(() => hasApiKey());
   const [isRunning, setIsRunning] = useState(false);
   const [showDevTest, setShowDevTest] = useState(false);
+  const [cooldownSeconds, setCooldownSeconds] = useState(0);
+  const [recordedSuccess, setRecordedSuccess] = useState(false);
 
   const [state, dispatch] = useReducer(reducer, INITIAL_STATE);
-  const abortRef = useRef<boolean>(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
-  // Keyboard shortcut Ctrl/Cmd + Enter to run
+  // Cooldown countdown timer per Spec §13 (10s between runs)
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-        if (!isRunning) {
-          handleRunMock();
-        }
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isRunning, bugReport, code]);
+    if (cooldownSeconds <= 0) return;
+    const timer = setInterval(() => {
+      setCooldownSeconds((prev) => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [cooldownSeconds]);
 
   const handleSelectSample = (s: Sample) => {
     if (isRunning) return;
@@ -110,145 +112,170 @@ export const App: React.FC = () => {
     setCode(s.code);
     setFixedCode('');
     setValidationError(null);
-    dispatch({ type: 'RESET' });
+
+    // Check if replay exists for this sample
+    const cached = getReplayForSample(s.id);
+    if (cached) {
+      dispatch({ type: 'RESET' });
+      dispatch({ type: 'SET_REPLAY', recordedAt: cached.recordedAt });
+    } else {
+      dispatch({ type: 'RESET' });
+    }
   };
 
-  // Mock Orchestrator runner for M1 UI validation per §10 & §15
-  const handleRunMock = async () => {
+  const handleRecordReplay = () => {
+    if (!state.outcome || state.outcome === 'INVALID_INPUT' || state.outcome === 'ERROR') return;
+    saveReplay(sample.id, {
+      sampleId: sample.id,
+      recordedAt: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
+      bugReport,
+      code,
+      fixedCode,
+      state
+    });
+    setRecordedSuccess(true);
+    setTimeout(() => setRecordedSuccess(false), 2000);
+  };
+
+  const handleDownloadReport = () => {
+    downloadProofReport(bugReport, code, fixedCode, state);
+  };
+
+  // Live Orchestrator runner wiring M3 Part 2 per Spec §7.3
+  const handleRunLive = async () => {
+    if (cooldownSeconds > 0) return;
+
     const validation = validateInput(bugReport, code);
     if (!validation.ok) {
       setValidationError(validation.message || 'Validation error');
       dispatch({ type: 'SET_OUTCOME', outcome: 'INVALID_INPUT', message: validation.message });
       return;
     }
-    setValidationError(null);
 
-    abortRef.current = false;
+    if (!hasApiKey()) {
+      setIsSettingsOpen(true);
+      setValidationError('Please provide your Gemini API key in settings before running.');
+      return;
+    }
+
+    setValidationError(null);
+    setFixedCode('');
     setIsRunning(true);
     dispatch({ type: 'RESET' });
 
-    const sleep = (ms: number) =>
-      new Promise((resolve) => {
-        const timer = setTimeout(resolve, ms);
-        // check abort
-        if (abortRef.current) clearTimeout(timer);
-      });
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
 
     try {
-      // Step 1: Preflight
-      dispatch({ type: 'SET_PHASE', phase: 'PREFLIGHT' });
-      dispatch({ type: 'UPDATE_STEP', stepId: 'PREFLIGHT', status: 'running' });
-      await sleep(300);
-      if (abortRef.current) return;
-      dispatch({ type: 'UPDATE_STEP', stepId: 'PREFLIGHT', status: 'done', durationSec: 0.2, detail: 'Preflight OK: single-file JS parsed successfully. Top-level function "mergeIntervals" identified.' });
-
-      // Step 2: Investigate
-      dispatch({ type: 'SET_PHASE', phase: 'INVESTIGATE' });
-      dispatch({ type: 'UPDATE_STEP', stepId: 'INVESTIGATE', status: 'running' });
-      await sleep(1000);
-      if (abortRef.current) return;
-      const mockInv = {
-        hypothesis: 'The function fails to sort intervals before the merge loop, causing out-of-order intervals to be discarded. Additionally, the overlap comparison uses `<` instead of `<=`, dropping touching intervals.',
-        suspectLocation: { functionName: 'mergeIntervals', lines: 'lines 3-8' },
-        failureMode: 'wrong-output' as const,
-        assumptions: ['Interval endpoints are numeric and intervals are represented as [start, end] pairs.'],
-        tests: SAMPLE_2_MOCK_TESTS
-      };
-      dispatch({ type: 'SET_INVESTIGATION', investigation: mockInv });
-      dispatch({ type: 'UPDATE_STEP', stepId: 'INVESTIGATE', status: 'done', durationSec: 1.1, detail: `Hypothesis: ${mockInv.hypothesis}` });
-
-      // Step 3: Freeze tests
-      dispatch({ type: 'UPDATE_STEP', stepId: 'FREEZE', status: 'running' });
-      await sleep(400);
-      if (abortRef.current) return;
-      const hash = '3f9a72b0c1e4d88e6a2b1f5c';
-      dispatch({ type: 'SET_FROZEN', hash, ids: SAMPLE_2_MOCK_TESTS.map((t) => t.id) });
-      dispatch({
-        type: 'UPDATE_STEP',
-        stepId: 'FREEZE',
-        status: 'done',
-        durationSec: 0.1,
-        badge: '🔒 6 tests',
-        detail: `Verification suite locked with SHA-256: ${hash}. Patcher has zero access to modify tests.`
-      });
-
-      // Step 4: Run Original (RED Gate)
-      dispatch({ type: 'SET_PHASE', phase: 'RUN_ORIGINAL' });
-      dispatch({ type: 'UPDATE_STEP', stepId: 'RUN_ORIGINAL', status: 'running' });
-      await sleep(700);
-      if (abortRef.current) return;
-      const originalResults = [
-        { id: 'repro_1', status: 'fail' as const, kind: 'assertion' as const, message: 'Expected [[1,6],[8,10]], got [[8,10]]', expected: '[[1,6],[8,10]]', actual: '[[8,10]]', durationMs: 4 },
-        { id: 'repro_2', status: 'fail' as const, kind: 'assertion' as const, message: 'Expected [[1,5]], got [[1,3],[3,5]]', expected: '[[1,5]]', actual: '[[1,3],[3,5]]', durationMs: 2 },
-        { id: 'guard_1', status: 'pass' as const, durationMs: 2 },
-        { id: 'guard_2', status: 'pass' as const, durationMs: 1 },
-        { id: 'guard_3', status: 'pass' as const, durationMs: 1 },
-        { id: 'holdout_1', status: 'fail' as const, kind: 'assertion' as const, message: 'Expected [[1,10]], got [[1,10],[2,5],[3,7]]', durationMs: 3 },
-      ];
-      dispatch({ type: 'SET_ORIGINAL_RUN', run: { results: originalResults, totalMs: 13 } });
-      dispatch({ type: 'UPDATE_STEP', stepId: 'RUN_ORIGINAL', status: 'done', durationSec: 0.3, detail: 'RED gate validated: 2/2 repro tests failed on buggy code with assertion mismatches.' });
-
-      // Step 5: Patch Call
-      dispatch({ type: 'SET_PHASE', phase: 'PATCH' });
-      dispatch({ type: 'UPDATE_STEP', stepId: 'PATCH', status: 'running' });
-      await sleep(1200);
-      if (abortRef.current) return;
-      const mockAttempt = {
-        attempt: 1,
-        rootCause: 'Intervals were evaluated in raw input sequence without pre-sorting by start time, and touching intervals were omitted because condition used strictly `<` instead of `<=`.',
-        changeSummary: 'Sort intervals by start coordinate and update overlap condition to `<=`.',
-        fixedSource: SAMPLE_2_PATCH,
-      };
-      setFixedCode(SAMPLE_2_PATCH);
-      dispatch({ type: 'ADD_ATTEMPT', attempt: mockAttempt });
-      dispatch({ type: 'UPDATE_STEP', stepId: 'PATCH', status: 'done', durationSec: 1.2, detail: `Patch Attempt 1: ${mockAttempt.changeSummary}` });
-
-      // Step 6: Run on Patched (GREEN Gate)
-      dispatch({ type: 'SET_PHASE', phase: 'RUN_PATCHED' });
-      dispatch({ type: 'UPDATE_STEP', stepId: 'RUN_PATCHED', status: 'running' });
-      await sleep(700);
-      if (abortRef.current) return;
-      const patchedResults = [
-        { id: 'repro_1', status: 'pass' as const, durationMs: 3 },
-        { id: 'repro_2', status: 'pass' as const, durationMs: 2 },
-        { id: 'guard_1', status: 'pass' as const, durationMs: 2 },
-        { id: 'guard_2', status: 'pass' as const, durationMs: 1 },
-        { id: 'guard_3', status: 'pass' as const, durationMs: 1 },
-        { id: 'holdout_1', status: 'pass' as const, durationMs: 3 },
-      ];
-      dispatch({ type: 'SET_PATCHED_RUN', run: { results: patchedResults, totalMs: 12 } });
-      dispatch({ type: 'UPDATE_STEP', stepId: 'RUN_PATCHED', status: 'done', durationSec: 0.3, detail: 'GREEN gate validated: 5/5 repro & guard tests pass cleanly without regressions.' });
-
-      // Step 7: Generalization & Holdout
-      dispatch({ type: 'SET_PHASE', phase: 'HOLDOUT' });
-      dispatch({ type: 'UPDATE_STEP', stepId: 'HOLDOUT', status: 'running' });
-      await sleep(400);
-      if (abortRef.current) return;
-      dispatch({ type: 'UPDATE_STEP', stepId: 'HOLDOUT', status: 'done', durationSec: 0.1, detail: 'Holdout check passed: 1/1 holdout test passes. Fix is general.' });
-
-      // Done
-      dispatch({ type: 'SET_OUTCOME', outcome: 'SOLVED' });
+      await runAgentOrchestrator(
+        { bugReport, code },
+        (event: AgentEvent) => {
+          switch (event.type) {
+            case 'PHASE':
+              dispatch({ type: 'SET_PHASE', phase: event.phase });
+              break;
+            case 'STEP':
+              dispatch({
+                type: 'UPDATE_STEP',
+                stepId: event.stepId,
+                status: event.status,
+                durationSec: event.durationSec,
+                badge: event.badge,
+                detail: event.detail
+              });
+              break;
+            case 'INVESTIGATION':
+              dispatch({ type: 'SET_INVESTIGATION', investigation: event.investigation });
+              break;
+            case 'FROZEN':
+              dispatch({ type: 'SET_FROZEN', hash: event.hash, ids: event.ids });
+              break;
+            case 'ORIGINAL_RUN':
+              dispatch({ type: 'SET_ORIGINAL_RUN', run: event.run });
+              break;
+            case 'PATCHED_RUN':
+              dispatch({ type: 'SET_PATCHED_RUN', run: event.run });
+              break;
+            case 'ATTEMPT':
+              setFixedCode(event.attempt.fixedSource);
+              dispatch({ type: 'ADD_ATTEMPT', attempt: event.attempt });
+              break;
+            case 'OUTCOME':
+              dispatch({
+                type: 'SET_OUTCOME',
+                outcome: event.outcome,
+                message: event.message,
+                warnings: event.warnings
+              });
+              break;
+          }
+        },
+        controller.signal
+      );
+    } catch (err: any) {
+      if (controller.signal.aborted) {
+        dispatch({
+          type: 'SET_OUTCOME',
+          outcome: 'UNSOLVED',
+          message: 'Execution cancelled by user.'
+        });
+      } else {
+        dispatch({
+          type: 'SET_OUTCOME',
+          outcome: 'ERROR',
+          message: err?.message || 'Agent loop encountered an unexpected error.'
+        });
+      }
     } finally {
       setIsRunning(false);
+      abortControllerRef.current = null;
+      setCooldownSeconds(10);
     }
   };
 
   const handleCancel = () => {
-    abortRef.current = true;
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
     setIsRunning(false);
     dispatch({ type: 'SET_OUTCOME', outcome: 'UNSOLVED', message: 'Execution cancelled by user.' });
   };
+
+  // Keyboard shortcut Ctrl/Cmd + Enter to run
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        if (!isRunning) {
+          handleRunLive();
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isRunning, bugReport, code]);
 
   return (
     <div className="min-h-screen bg-[#0B0F14] text-[#E2E8F0] flex flex-col">
       {/* Top Navigation Bar */}
       <header className="border-b border-[#1F2937] bg-[#121821]/90 backdrop-blur-md sticky top-0 z-40 px-4 sm:px-6 py-3">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
-          {/* Brand Motif per §10.2 */}
+          {/* Brand Motif per §10.2: turns green on success */}
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-1.5" aria-hidden="true">
-              <span className="w-3 h-3 rounded-full bg-[#F43F5E] shadow-sm shadow-rose-500/50" />
-              <span className="w-3 h-3 rounded-full bg-[#F59E0B] shadow-sm shadow-amber-500/50" />
+              <span
+                className={`w-3 h-3 rounded-full transition-all duration-500 shadow-sm ${
+                  state.outcome === 'SOLVED'
+                    ? 'bg-[#22C55E] shadow-emerald-500/50'
+                    : 'bg-[#F43F5E] shadow-rose-500/50'
+                }`}
+              />
+              <span
+                className={`w-3 h-3 rounded-full transition-all duration-500 shadow-sm ${
+                  state.outcome === 'SOLVED'
+                    ? 'bg-[#22C55E] shadow-emerald-500/50'
+                    : 'bg-[#F59E0B] shadow-amber-500/50'
+                }`}
+              />
               <span className="w-3 h-3 rounded-full bg-[#22C55E] shadow-sm shadow-emerald-500/50" />
             </div>
             <div className="flex items-baseline gap-2">
@@ -303,7 +330,7 @@ export const App: React.FC = () => {
         {state.replay && (
           <ReplayBadge
             recordedAt={state.replay.recordedAt}
-            onRunLive={handleRunMock}
+            onRunLive={handleRunLive}
             isRunning={isRunning}
           />
         )}
@@ -317,25 +344,26 @@ export const App: React.FC = () => {
               code={code}
               setCode={setCode}
               isRunning={isRunning}
-              onRun={handleRunMock}
+              onRun={handleRunLive}
               onCancel={handleCancel}
               onSelectSample={handleSelectSample}
               selectedSampleId={sample.id}
               error={validationError}
+              cooldownSeconds={cooldownSeconds}
             />
           </section>
 
           {/* Right Column (Verdict, Timeline, Evidence) - 7 cols on lg */}
           <section className="lg:col-span-7 flex flex-col gap-4">
             {/* Verdict Bar */}
-            <VerdictBar state={state} onRetry={handleRunMock} />
+            <VerdictBar state={state} onRetry={handleRunLive} />
 
             {/* Agent Timeline */}
             <Timeline steps={state.steps} />
 
             {/* Evidence Area with Tabs */}
             <div className="bg-[#121821] border border-[#1F2937] rounded-xl p-4 shadow-xl">
-              <div className="flex items-center justify-between pb-3 border-b border-[#1F2937] mb-4">
+              <div className="flex items-center justify-between pb-3 border-b border-[#1F2937] mb-4 gap-2 flex-wrap">
                 <div className="flex items-center gap-1 bg-[#0B0F14] border border-[#1F2937] rounded-lg p-1">
                   <button
                     onClick={() => dispatch({ type: 'SET_TAB', tab: 'tests' })}
@@ -369,9 +397,38 @@ export const App: React.FC = () => {
                   </button>
                 </div>
 
-                <span className="text-[11px] text-slate-500 font-mono hidden sm:inline">
-                  Proof-Carrying Evidence
-                </span>
+                <div className="flex items-center gap-2">
+                  {state.outcome && (
+                    <button
+                      onClick={handleDownloadReport}
+                      title="Download RedToGreen-report.md"
+                      className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[#0B0F14] border border-[#1F2937] hover:border-slate-500 text-[11px] text-slate-300 hover:text-white transition-all shadow-xs"
+                    >
+                      <Download className="w-3.5 h-3.5 text-rose-400" />
+                      <span>Download Proof Report</span>
+                    </button>
+                  )}
+
+                  {state.outcome === 'SOLVED' && (
+                    <button
+                      onClick={handleRecordReplay}
+                      title="Dev only: save real run into replays cache"
+                      className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20 text-[11px] text-amber-300 font-mono transition-all"
+                    >
+                      {recordedSuccess ? (
+                        <>
+                          <Check className="w-3 h-3 text-emerald-400" />
+                          <span>Saved Replay</span>
+                        </>
+                      ) : (
+                        <>
+                          <Disc className="w-3 h-3 text-amber-400" />
+                          <span>Record Replay</span>
+                        </>
+                      )}
+                    </button>
+                  )}
+                </div>
               </div>
 
               {/* Tab Contents */}

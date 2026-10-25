@@ -14,6 +14,7 @@ interface InputPanelProps {
   onSelectSample: (sample: Sample) => void;
   selectedSampleId: string | null;
   error?: string | null;
+  cooldownSeconds?: number;
 }
 
 export const InputPanel: React.FC<InputPanelProps> = ({
@@ -26,7 +27,8 @@ export const InputPanel: React.FC<InputPanelProps> = ({
   onCancel,
   onSelectSample,
   selectedSampleId,
-  error
+  error,
+  cooldownSeconds = 0
 }) => {
   const reportBytes = new TextEncoder().encode(bugReport).length;
   const codeBytes = new TextEncoder().encode(code).length;
@@ -118,12 +120,20 @@ export const InputPanel: React.FC<InputPanelProps> = ({
         <div className="flex items-center gap-3">
           <button
             onClick={onRun}
-            disabled={isRunning || !bugReport.trim() || !code.trim()}
+            disabled={isRunning || cooldownSeconds > 0 || !bugReport.trim() || !code.trim()}
             className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-rose-500 hover:bg-rose-600 active:bg-rose-700 text-white font-medium text-xs shadow-lg shadow-rose-500/20 transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
           >
             <Play className="w-4 h-4 fill-current" />
-            <span>Prove & Fix</span>
-            <span className="text-[10px] opacity-75 hidden sm:inline ml-1 font-mono">⌘/Ctrl+Enter</span>
+            <span>
+              {cooldownSeconds > 0
+                ? `Cooldown (${cooldownSeconds}s)`
+                : isRunning
+                ? 'Running...'
+                : 'Prove & Fix'}
+            </span>
+            {cooldownSeconds === 0 && (
+              <span className="text-[10px] opacity-75 hidden sm:inline ml-1 font-mono">⌘/Ctrl+Enter</span>
+            )}
           </button>
 
           {isRunning && (

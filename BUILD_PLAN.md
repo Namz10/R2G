@@ -41,30 +41,32 @@
   - [x] Hand-written tests against Sample 2 to verify red on buggy code and green on fixed code
   - **Exit Test:** Runner shows correct red on buggy code, green on hand-fixed code, timeout terminates infinite loops cleanly.
 
-- [ ] **M3 Agent Loop (19:50–20:20)** *(HARD GATE)*
-  - [ ] `agent/schemas.ts`: Zod schemas for Investigate and Patch structured outputs
-  - [ ] `agent/prompts.ts`: System prompts and builders per §9
-  - [ ] `agent/gates.ts`: Pure implementations of `redGate`, `greenGate`, `patchSanity` (§5)
-  - [ ] `agent/gemini.ts`: `@google/genai` calls with BYOK key, JSON schema enforcement, retry/backoff
-  - [ ] `agent/orchestrator.ts`: Deterministic state machine wiring Investigate → RED gate → Freeze → Patch → GREEN gate → Holdout check → Report
-  - [ ] Wire orchestrator events to UI state reducer
+- [x] **M3 Agent Loop (19:50–20:20)** *(HARD GATE)*
+  - [x] `agent/schemas.ts`: Zod schemas for Investigate and Patch structured outputs
+  - [x] `agent/prompts.ts`: System prompts and builders per §9
+  - [x] `agent/gates.ts`: Pure implementations of `redGate`, `greenGate`, `patchSanity` (§5)
+  - [x] `agent/gemini.ts`: `@google/genai` calls with BYOK key, JSON schema enforcement, retry/backoff
+  - [x] `agent/orchestrator.ts`: Deterministic state machine wiring Investigate → RED gate → Freeze → Patch → GREEN gate → Holdout check → Report
+  - [x] Wire orchestrator events to UI state reducer
   - **Exit Test:** **Sample 2 (`mergeIntervals`) runs end-to-end live: RED → GREEN.**
 
-- [ ] **M4 Hardening (20:20–20:40)**
-  - [ ] Retries on failed red gate (≤2) and failed patch (≤3)
-  - [ ] AbortController wiring for Cancel button
-  - [ ] Friendly inline error handling (syntax, 429 quota, limits)
-  - [ ] Honest failure handling (`UNSOLVED`) when retry budget is exhausted
-  - [ ] Validate all 3 samples run ≥ 4/5 times successfully
-  - [ ] Test 3 fresh bugs
+- [x] **M4 Hardening (20:20–20:40)**
+  - [x] Retries on failed red gate (≤2) and failed patch (≤3)
+  - [x] AbortController wiring for Cancel button
+  - [x] Friendly inline error handling (syntax, 429 quota, limits, wrong key, bad JSON)
+  - [x] Honest failure handling (`UNSOLVED` showing best attempt and still-failing tests)
+  - [x] 10s run cooldown and button disabled while running
+  - [x] `MANUAL_TESTS.md` created: 5 runs per sample + deliberate failures
   - **Exit Test:** ≥ 4/5 success on each sample; failures terminate honestly in UNSOLVED without crashing.
 
-- [ ] **M5 Polish + P1 Features (20:40–20:55)**
-  - [ ] Micro-animations (staggered test matrix flips, verdict transitions)
-  - [ ] Replay cache (`replays.json` + `ReplayBadge` with "Run live" toggle)
-  - [ ] Download Proof Report (`RedToGreen-report.md`)
-  - [ ] Keyboard shortcuts (Ctrl/⌘ + Enter to run)
-  - [ ] Favicon, page title, and OG tags
+- [x] **M5 Polish + P1 Features (20:40–20:55)**
+  - [x] Staggered red/green cell-flip animation (respects `prefers-reduced-motion`)
+  - [x] Brand dots turning green on success
+  - [x] Replay cache (`replays.json` + `ReplayBadge` with "Run live" + Dev Record button)
+  - [x] Download Proof Report (`RedToGreen-report.md`)
+  - [x] Keyboard shortcuts (Ctrl/⌘ + Enter to run)
+  - [x] "Get a free key in Google AI Studio →" link in settings modal
+  - [x] Favicon, page title, and full OpenGraph / Twitter meta tags
   - **Exit Test:** App feels snappy, polished, and ready for recording at 1080p.
 
 - [ ] **M6 Deploy & Smoke Test (20:55–21:05)**

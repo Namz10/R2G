@@ -20,7 +20,9 @@ export const TestMatrix: React.FC<TestMatrixProps> = ({
   const origMap = new Map((originalResults || []).map((r) => [r.id, r]));
   const patchMap = new Map((patchedResults || []).map((r) => [r.id, r]));
 
-  const renderStatus = (result?: TestResult) => {
+  const renderStatus = (result?: TestResult, index: number = 0) => {
+    const staggerDelay = `${index * 120}ms`;
+
     if (!result) {
       return (
         <span className="inline-flex items-center gap-1.5 text-xs text-slate-500 font-mono">
@@ -31,7 +33,10 @@ export const TestMatrix: React.FC<TestMatrixProps> = ({
     }
     if (result.status === 'pass') {
       return (
-        <span className="inline-flex items-center gap-1.5 text-xs text-emerald-400 font-medium font-mono">
+        <span
+          style={{ animationDelay: staggerDelay }}
+          className="inline-flex items-center gap-1.5 text-xs text-emerald-400 font-medium font-mono animate-cell-flip"
+        >
           <Check className="w-3.5 h-3.5" />
           <span>pass</span>
           <span className="text-[10px] text-slate-500">({result.durationMs.toFixed(0)}ms)</span>
@@ -40,7 +45,10 @@ export const TestMatrix: React.FC<TestMatrixProps> = ({
     }
     if (result.status === 'fail' || result.status === 'error') {
       return (
-        <span className="inline-flex items-center gap-1.5 text-xs text-rose-400 font-medium font-mono">
+        <span
+          style={{ animationDelay: staggerDelay }}
+          className="inline-flex items-center gap-1.5 text-xs text-rose-400 font-medium font-mono animate-cell-flip"
+        >
           <X className="w-3.5 h-3.5" />
           <span>fail</span>
           <span className="text-[10px] text-slate-500">({result.durationMs.toFixed(0)}ms)</span>
@@ -111,7 +119,7 @@ export const TestMatrix: React.FC<TestMatrixProps> = ({
             </tr>
           </thead>
           <tbody className="divide-y divide-[#1F2937]/60">
-            {tests.map((test) => {
+            {tests.map((test, idx) => {
               const orig = origMap.get(test.id);
               const patch = patchMap.get(test.id);
               const isExpanded = expandedId === test.id;
@@ -127,8 +135,8 @@ export const TestMatrix: React.FC<TestMatrixProps> = ({
                       <div className="font-medium text-slate-200">{test.name}</div>
                       <div className="text-[11px] font-mono text-slate-500">{test.id}</div>
                     </td>
-                    <td className="py-2.5 px-3">{renderStatus(orig)}</td>
-                    <td className="py-2.5 px-3">{renderStatus(patch)}</td>
+                    <td className="py-2.5 px-3">{renderStatus(orig, idx)}</td>
+                    <td className="py-2.5 px-3">{renderStatus(patch, idx)}</td>
                     <td className="py-2.5 px-2 text-slate-500">
                       {isExpanded ? (
                         <ChevronDown className="w-4 h-4" />

@@ -66,3 +66,47 @@ Implement M2 per spec §8 and Appendix A, replacing the runner stubs. Build harn
 
 
 ---
+
+## M3 — Agent Loop (Part 1: Schemas, Prompts, Gemini Client, Gates; Part 2: Orchestrator, Live End-to-End RED→GREEN)
+
+**Prompt:**
+```
+Implement M3 part 1 per spec §5 and §9. Build schemas.ts (zod for Investigate and Patch outputs), prompts.ts (system prompts verbatim from §9 plus builders that wrap user content as DATA), gemini.ts (@google/genai, BYOK key from sessionStorage, MODEL_ID constant, JSON schema output, 45s timeout, one retry with backoff), and pure gates.ts per Appendix B. Add unit-style checks for gates using fixture data. No UI wiring yet. Log this prompt in prompt-journey.md first.
+Implement M3 part 2 per spec §7.3. Build orchestrator.ts: preflight, Investigate with up to two feedback retries, redGate, freeze with SHA-256 hash and holdouts hidden from the patcher, Patch up to three attempts with failure feedback, greenGate, holdout advisory, outcomes. Emit events into the UI reducer, remove the mock runner, wire Cancel via AbortController. Exit test: Sample 2 runs live RED→GREEN with my key. Log this prompt first.
+```
+
+**What came back:**
+
+
+**What broke / surprised me:**
+
+
+**Refined prompt / fix:**
+
+
+**Lesson:**
+
+
+---
+
+## M4 & M5 — Hardening (§14) and Polish (§10 & M5)
+
+**Prompt:**
+```
+Harden per spec §14. Add specific UI errors for 429 quota, invalid key, bad JSON, syntax errors, imports, non-JS paste, and size limits. UNSOLVED must show the best attempt and still-failing tests. Add a 10s run cooldown; disable Run while active. Create MANUAL_TESTS.md for me: five runs per sample, plus deliberate failures (bad test, bad patch, infinite loop, empty input, wrong key). Log this prompt first.
+Polish per spec §10 and M5, one feature at a time without breaking existing behavior: staggered red/green cell-flip animation (respect prefers-reduced-motion), brand dots turning green on success, Ctrl/⌘+Enter to run, Proof Report download (§12.6), syntax highlighting, OG tags. Add a dev-only Record button saving real runs to replays.json, with ReplayBadge and Run live. Add a "Get a free key" AI Studio link in settings. Log this prompt first.
+```
+
+**What came back:**
+
+
+**What broke / surprised me:**
+
+
+**Refined prompt / fix:**
+
+
+**Lesson:**
+
+
+---

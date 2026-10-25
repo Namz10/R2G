@@ -38,3 +38,25 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: #374151;
 }
+
+/* Animations per Spec §10.2, §10.4 & §10.6 */
+@keyframes cellFlip {
+  0% {
+    transform: rotateX(-90deg);
+    opacity: 0;
+  }
+  100% {
+    transform: rotateX(0deg);
+    opacity: 1;
+  }
+}
+
+.animate-cell-flip {
+  animation: cellFlip 250ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-cell-flip {
+    animation: none !important;
+  }
+}

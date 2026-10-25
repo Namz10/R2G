@@ -60,17 +60,17 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
               <code className="text-slate-200">sessionStorage</code>. It is never logged, never committed, never in code, env files, or URLs.
             </span>
           </div>
-          <p className="text-slate-400 text-[11px]">
-            You can get a free Gemini API key from{' '}
+          <div className="pt-1 flex items-center justify-between text-[11px]">
+            <span className="text-slate-400">Need an API key?</span>
             <a
               href="https://aistudio.google.com/app/apikey"
               target="_blank"
               rel="noreferrer"
-              className="text-rose-400 hover:underline"
+              className="inline-flex items-center gap-1 text-rose-400 hover:text-rose-300 font-medium underline"
             >
-              Google AI Studio
-            </a>.
-          </p>
+              Get a free key in Google AI Studio →
+            </a>
+          </div>
         </div>
 
         <div className="space-y-1.5 mb-5">
