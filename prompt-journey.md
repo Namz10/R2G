@@ -32,18 +32,6 @@ Read RedToGreen-SPEC.md fully and treat it as the source of truth. Scaffold the 
 Also create BUILD_PLAN.md: convert spec §15 into a checkbox list per milestone (M0–M7) with exit tests and the cut-line, marking M1 in progress. Create prompt-journey.md using the §17.2 template and log this entire prompt verbatim under M1, leaving outcome fields blank for me to fill. Append a rule to spec §17.2: every future prompt is logged there before work begins.
 ```
 
-**What came back:**
-
-
-**What broke / surprised me:**
-
-
-**Refined prompt / fix:**
-
-
-**Lesson:**
-
-
 ---
 
 ## M2 — Execution Engine (Runner, Worker Harness, Classifier, Preflight & Dev Test Page)
@@ -52,18 +40,6 @@ Also create BUILD_PLAN.md: convert spec §15 into a checkbox list per milestone 
 ```
 Implement M2 per spec §8 and Appendix A, replacing the runner stubs. Build harness.ts (one Web Worker per test from a Blob URL, assert API, safe formatter, egress neutralization), classify.ts (assertion, runtime, reference, syntax, timeout), and runner.ts with preflight and run(source, tests) enforcing a 1.5s main-thread timeout via worker.terminate(). Add a dev-only test page proving Sample 2 is red on buggy code, green on a hand-fixed version, and that while(true){} times out. Log this prompt in prompt-journey.md first. Don't touch the agent.
 ```
-
-**What came back:**
-
-
-**What broke / surprised me:**
-
-
-**Refined prompt / fix:**
-
-
-**Lesson:**
-
 
 ---
 
@@ -75,18 +51,6 @@ Implement M3 part 1 per spec §5 and §9. Build schemas.ts (zod for Investigate 
 Implement M3 part 2 per spec §7.3. Build orchestrator.ts: preflight, Investigate with up to two feedback retries, redGate, freeze with SHA-256 hash and holdouts hidden from the patcher, Patch up to three attempts with failure feedback, greenGate, holdout advisory, outcomes. Emit events into the UI reducer, remove the mock runner, wire Cancel via AbortController. Exit test: Sample 2 runs live RED→GREEN with my key. Log this prompt first.
 ```
 
-**What came back:**
-
-
-**What broke / surprised me:**
-
-
-**Refined prompt / fix:**
-
-
-**Lesson:**
-
-
 ---
 
 ## M4 & M5 — Hardening (§14) and Polish (§10 & M5)
@@ -97,18 +61,6 @@ Harden per spec §14. Add specific UI errors for 429 quota, invalid key, bad JSO
 Polish per spec §10 and M5, one feature at a time without breaking existing behavior: staggered red/green cell-flip animation (respect prefers-reduced-motion), brand dots turning green on success, Ctrl/⌘+Enter to run, Proof Report download (§12.6), syntax highlighting, OG tags. Add a dev-only Record button saving real runs to replays.json, with ReplayBadge and Run live. Add a "Get a free key" AI Studio link in settings. Log this prompt first.
 ```
 
-**What came back:**
-
-
-**What broke / surprised me:**
-
-
-**Refined prompt / fix:**
-
-
-**Lesson:**
-
-
 ---
 
 ## M6 — Deploy Preparation & Build Verification
@@ -118,18 +70,6 @@ Polish per spec §10 and M5, one feature at a time without breaking existing beh
 Prepare deployment. Ensure npm run build passes. Write README.md (what it is, how BYOK works, run instructions). Confirm .gitignore covers env files and no API key appears in source, dist, or git history. Add static deploy config for Vercel or Netlify (client-only, no server). Add a UI privacy note that code is sent to Gemini using the user's own key. Log this prompt first.
 ```
 
-**What came back:**
-
-
-**What broke / surprised me:**
-
-
-**Refined prompt / fix:**
-
-
-**Lesson:**
-
-
 ---
 
 ## M7 — Submission Documentation
@@ -138,18 +78,6 @@ Prepare deployment. Ensure npm run build passes. Write README.md (what it is, ho
 ```
 Create SUBMISSION.md: short problem statement from spec §2.1; LinkedIn post draft with #VibeToBuild #DFP2026 #GDGPune #DevFestIndia #DevFestPune2026 and a placeholder for the live URL; the demo shooting script from §16; and a summary of the real pivots from my logged prompt-journey.md entries, inventing nothing. Log this prompt first. (use tokens judiciously, think intelligently- make this PEAK)
 ```
-
-**What came back:**
-
-
-**What broke / surprised me:**
-
-
-**Refined prompt / fix:**
-
-
-**Lesson:**
-
 
 ---
 
